@@ -77,6 +77,7 @@
       <button class="tab" role="tab" data-tab="juke" data-ic="note" aria-selected="false"><span class="ti"></span><span>Jukebox</span></button>
       <button class="tab" role="tab" data-tab="stats" data-ic="clock" aria-selected="false"><span class="ti"></span><span>Stats</span></button>
       <button class="tab" role="tab" data-tab="opt" data-ic="gear" aria-selected="false"><span class="ti"></span><span>Options</span></button>
+      <button class="tab" role="tab" data-tab="dbg" data-ic="bolt" aria-selected="false" hidden><span class="ti"></span><span>Debug</span></button>
     </nav>
     <div class="panels">
       <div class="panel on" id="p-hood">
@@ -160,6 +161,12 @@
         <dl class="stats" id="statList"></dl>
         <h3>Purchased upgrades (<span id="boughtCount">0</span>)</h3>
         <div class="upgrid" id="bought"></div>
+      </div>
+
+      <div class="panel paper" id="p-dbg">
+        <h2>Testing menu</h2>
+        <p class="lede">Unlocked because your community is named "promisedcongregation". Rename it to hide this tab. Everything here changes your real save, so export a save code first if you want to go back.</p>
+        <div id="dbg"></div>
       </div>
 
       <div class="panel paper" id="p-opt">

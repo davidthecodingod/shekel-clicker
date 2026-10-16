@@ -401,7 +401,8 @@ function buyUp(u, quiet) {
   if (!quiet) { Sound.sfx.buy(); hideTip(); recalc(); refreshUpgrades(true); checkAch(); if (u.kind === 'luach') renderSeasons(); }
   return true;
 }
-const availableUps = () => UPGRADES.filter(u => !upSet.has(u.id) && u.unlock()).sort((a, b) => a.cost - b.cost);
+let dbgAllUps = false;  // testing menu: show every upgrade in the store
+const availableUps = () => UPGRADES.filter(u => !upSet.has(u.id) && (dbgAllUps || u.unlock())).sort((a, b) => a.cost - b.cost);
 function refreshUpgrades(force) {
   const av = availableUps();
   const key = av.map(u => u.id).join(',') + '|' + upSet.size;
@@ -837,7 +838,85 @@ function modal({title, text, input, okText}) {
   });
 }
 const confirmBox = (title, text, okText) => modal({title, text, okText}).then(v => !!v);
-function renderName() { $('#commName .pl-name').textContent = S.name || 'Your Congregation'; }
+function renderName() {
+  $('#commName .pl-name').textContent = S.name || 'Your Congregation';
+  const on = debugOn(), tab = $('.tab[data-tab="dbg"]');
+  tab.hidden = !on;
+  if (!on && curTab === 'dbg') showTab('hood');
+}
+
+/* ================= TESTING MENU =================
+   Hidden tab for playtesting, shown only while the community is named
+   "promisedcongregation" (any capitalization). */
+const debugOn = () => (S.name || '').trim().toLowerCase() === 'promisedcongregation';
+function dbgAfter(msg) {
+  recalc(); refreshUpgrades(true); updateStore(); renderHood(true); renderPom(); genUI(); renderSeasons(); checkAch(); storyCheck(true);
+  if (msg) toast('Testing menu', msg, {name:'bolt'});
+}
+function renderDebug() {
+  const box = $('#dbg'); box.innerHTML = '';
+  const group = (title, items) => {
+    const h = document.createElement('h3'); h.textContent = title; box.appendChild(h);
+    const row = document.createElement('div'); row.className = 'row';
+    for (const [label, fn] of items) {
+      const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = label;
+      b.addEventListener('click', () => { fn(); });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  };
+  const addShekels = n => { earn(n); dbgAfter(`+${fmt(n)} shekels.`); };
+  group('Shekels', [
+    ['+1 thousand', () => addShekels(1e3)], ['+1 million', () => addShekels(1e6)], ['+1 billion', () => addShekels(1e9)],
+    ['+1 trillion', () => addShekels(1e12)], ['+1 quintillion', () => addShekels(1e18)], ['×10 what I have', () => addShekels(Math.max(1, S.bank) * 9)],
+    ['+1 hour of production', () => addShekels(Math.max(1, baseCps) * 3600)], ['Empty my shekels', () => { S.bank = 0; dbgAfter('Shekels set to 0.'); }],
+  ]);
+  const addB = n => { BUILDINGS.forEach(b => S.b[b.id] = owned(b.id) + n); dbgAfter(`+${n} of every building.`); };
+  group('Buildings', [
+    ['+1 of each', () => addB(1)], ['+10 of each', () => addB(10)], ['+100 of each', () => addB(100)],
+    ['Next locked building', () => { const b = BUILDINGS.find(x => !owned(x.id)); if (b) { S.b[b.id] = 1; dbgAfter(`Got a ${b.name}.`); } else toast('Testing menu', 'You already own every building.', {name:'bolt'}); }],
+    ['Remove all buildings', () => { S.b = {}; dbgAfter('All buildings removed.'); }],
+  ]);
+  group('Upgrades and achievements', [
+    ['Show every upgrade in the store', () => { dbgAllUps = !dbgAllUps; dbgAfter(dbgAllUps ? 'Every upgrade is now for sale (still costs shekels). Click again to turn off.' : 'Store back to normal.'); }],
+    ['Own every upgrade', () => { UPGRADES.forEach(u => upSet.add(u.id)); dbgAfter('All upgrades owned.'); }],
+    ['Remove all upgrades', () => { upSet = new Set(); dbgAfter('All upgrades removed.'); }],
+    ['Grant every achievement', () => { ACH.forEach(a => achSet.add(a.id)); renderAch(); dbgAfter('All achievements granted.'); }],
+    ['Clear achievements', () => { achSet = new Set(); setHoney(); dbgAfter('Achievements cleared.'); }],
+  ]);
+  group('Pomegranates and levels', [
+    ['Start pomegranates', () => { if (!S.pom.since) S.pom.since = NOW(); S.allTime = Math.max(S.allTime, 1e9); dbgAfter('Pomegranate tree planted.'); }],
+    ['+10 pomegranates', () => { if (!S.pom.since) S.pom.since = NOW(); S.pom.n += 10; dbgAfter('+10 pomegranates.'); }],
+    ['Ripen one now', () => { if (!S.pom.since) S.pom.since = NOW(); S.pom.since -= pomTime(); pomTick(); dbgAfter(); }],
+    ['Open all minigames', () => { for (const id of ['deli','kibbutz','yeshiva','school']) { if (!owned(id)) S.b[id] = 1; if (!lvl(id)) { S.lvl[id] = 1; S.levelsTotal++; } } if (!S.pom.since) S.pom.since = NOW(); renderMinigames(true); dbgAfter('Shuk, Kibbutz Fields, Torah Study and Dreidel are open.'); }],
+    ['Level every building +1', () => { BUILDINGS.forEach(b => { S.lvl[b.id] = lvl(b.id) + 1; S.levelsTotal++; }); dbgAfter('Every building gained a level.'); }],
+  ]);
+  group('Events', [
+    ['Spawn golden gelt', () => spawnGelt()],
+    ['Frenzy ×7 (77s)', () => { addBuff('Frenzy ×7', {cps:7}, 77, 'gelt'); dbgAfter(); }],
+    ['Click frenzy ×777 (13s)', () => { addBuff('Click frenzy ×777', {click:777}, 13, 'hand'); dbgAfter(); }],
+    ['Clear buffs', () => { S.buffs = []; renderBuffs(); dbgAfter(); }],
+    ['Spawn holiday visitor', () => { if (S.season === 'none') { toast('Testing menu', 'Pick a holiday below first.', {name:'bolt'}); return; } upSet.add('luach'); spawnCritter(); }],
+    ['Find all holiday treasures', () => { ALL_DROPS.forEach(u => { if (!S.drops.includes(u.id)) S.drops.push(u.id); }); dbgAfter('All 30 treasures are in the store.'); }],
+  ]);
+  group('Holiday', Object.entries(SEASONS).map(([id, se]) => [se.name, () => { upSet.add('luach'); S.season = id; if (id !== 'none') { S.switched = true; nextCrit = NOW() + 3000; } dbgAfter(`Holiday set to ${se.name}.`); }]));
+  group('Minigame timers', [
+    ['Torah question now', () => { S.trivia.next = 0; renderMinigames(true); dbgAfter('Torah Study is ready.'); }],
+    ['Dreidel ready now', () => { S.dreidel.next = 0; renderMinigames(true); dbgAfter('The dreidel is ready.'); }],
+    ['Ripen all crops', () => { S.garden.plots.forEach(p => { if (p) p.at = 0; }); renderMinigames(true); dbgAfter('Every planted crop is ripe.'); }],
+    ['Next market day', () => { if (lvl('deli') < 1) { toast('Testing menu', 'Open the Shuk first (Deli level 1).', {name:'bolt'}); return; } marketTick(); S.market.last -= MARKET_DAY; marketTick(); renderMinigames(true); dbgAfter(`Market day ${S.market.day}.`); }],
+    ['Skip 30 market days', () => { if (lvl('deli') < 1) return; marketTick(); S.market.last -= 30 * MARKET_DAY; marketTick(); renderMinigames(true); dbgAfter(`Market day ${S.market.day}.`); }],
+  ]);
+  group('Story', [
+    ...STORY.map(ch => [ch.n === 0 ? 'Prologue' : `Ch. ${ch.n}`, () => { if (!S.story.got.includes(ch.id)) S.story.got.push(ch.id); playScene(ch.id); }]),
+    ['Reset story progress', () => { S.story = {got:[], seen:[]}; renderStory(); toast('Testing menu', 'Story reset. Chapters replay as you reach them again.', {name:'bolt'}); }],
+  ]);
+  group('Generations', [
+    ['Ready to pass on (+10 heritage)', () => { S.allTime = Math.max(S.allTime, Math.pow(heritageFor(S.allTime) + 10, 3) * 1e12); dbgAfter('Enough all-time shekels for 10 more heritage. Use the Generations tab.'); }],
+    ['+100 heirloom points', () => { S.chips += 100; renderHeirlooms(true); dbgAfter('+100 heirloom points.'); }],
+    ['Simulate 1 hour away', () => { S.lastSave = NOW() - 3600e3; save(); toast('Testing menu', 'Reload the page to collect offline earnings.', {name:'bolt'}); }],
+  ]);
+}
 $('#commName').addEventListener('click', async () => {
   const v = await modal({title:'Name your community', text:'This name appears on the plaque above the coin.', input:S.name || ''});
   if (v === null) return;
@@ -888,6 +967,7 @@ function showTab(name) {
   if (name === 'gen') { genUI(); renderHeirlooms(true); }
   if (name === 'ach') renderAch();
   if (name === 'hol') renderSeasons();
+  if (name === 'dbg') { if (!debugOn()) { showTab('hood'); return; } renderDebug(); }
   if (name === 'mg') renderMinigames(true);
   if (name === 'hood') renderHood(true);
   if (name === 'story') renderStory();
