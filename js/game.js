@@ -790,7 +790,7 @@ function sceneLine() {
   $('#scWho').hidden = !c.name;
   $('#scNext').textContent = scene.i === scene.ch.lines.length - 1 ? 'Close' : 'Next';
   const p = $('#scLine'); clearInterval(scene.typing);
-  if (reduceMotion) { p.textContent = text; scene.typing = null; return; }
+  if (reduceMotion || (scene.i === 0 && !decoOn)) { p.textContent = text; scene.typing = null; return; }
   let k = 0; p.textContent = '';
   scene.typing = setInterval(() => { k += 2; p.textContent = text.slice(0, k); if (k >= text.length) { clearInterval(scene.typing); scene.typing = null; } }, 28);
 }
@@ -1023,13 +1023,15 @@ function tick() {
 }
 /* The orbiting hands redraw 20 times a second, and not at all when the coin is
    off screen, the tab is hidden, or low-power mode is on (then they are drawn once). */
-let orbitStill = '', decoT = 0;
+let orbitStill = '', decoT = 0, decoOn = false;
+// decorative motion (halo, honey wave) waits for the player's first interaction, so the page settles fast on load
+for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => { decoOn = true; }, {capture:true, once:true});
 const haloEl = $('.halo'), waveEl = $('#honey .hwave');
 function animLoop() {
   setTimeout(animLoop, 50);
   if (document.hidden || (innerWidth <= 900 && document.body.dataset.view !== 'mint')) return;
   // the halo and honey wave step a few times a second (cheaper than CSS animations, which redraw every frame)
-  if (!opts.lowpower && !reduceMotion && ++decoT % 4 === 0) {
+  if (decoOn && !opts.lowpower && !reduceMotion && ++decoT % 4 === 0) {
     const t = performance.now();
     haloEl.style.transform = `rotate(${Math.floor(t / 200) % 240 * 1.5}deg)`;
     waveEl.style.transform = `translateX(${-48 + Math.floor(t / 150) % 16 * 3}px)`;
@@ -1076,7 +1078,7 @@ function boot() {
   }
   pomTick(); checkAch(); marketTick(true);
   nextNews();
-  setTimeout(() => storyCheck(), loaded ? 1500 : 900);
+  setTimeout(() => storyCheck(), loaded ? 1500 : 250);
   setInterval(tick, 100);
   setInterval(nextNews, 11000);
   setInterval(drawHood, 280);
