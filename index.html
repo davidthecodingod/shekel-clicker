@@ -4,83 +4,106 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shekel Clicker</title>
-<meta name="description" content="A Jewish-themed idle clicker: braid challah, build shuls, catch golden gelt, and dance the hora.">
-<meta name="theme-color" content="#142B4F">
+<meta name="description" content="A Jewish idle clicker in pixel art. Click the ancient shekel, hire Bubbes, braid challah, catch golden gelt, and follow the community all the way to Jewpiter.">
+<meta name="theme-color" content="#10162b">
+<meta property="og:type" content="website">
 <meta property="og:title" content="Shekel Clicker">
-<meta property="og:description" content="Braid challah, build shuls, catch golden gelt, and dance the hora.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<meta property="og:description" content="Click the ancient shekel, hire Bubbes, braid challah, and follow the community all the way to Jewpiter.">
+<meta property="og:image" content="https://davidthecodingod.github.io/shekel-clicker/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
-<script defer src="js/art.js"></script>
+<script defer src="js/sprites.js"></script>
+<script defer src="js/pixel.js"></script>
 <script defer src="js/data.js"></script>
+<script defer src="js/story.js"></script>
 <script defer src="js/music.js"></script>
 <script defer src="js/game.js"></script>
 <script defer src="js/minigames.js"></script>
 </head>
-<body>
+<body data-view="mint">
+<noscript><p class="noscript">Shekel Clicker needs JavaScript to run. Turn it on and reload the page.</p></noscript>
+
+<!-- Phone header: always shows your shekels -->
+<header id="mbar" aria-hidden="true">
+  <span class="mb-coin"></span>
+  <span><b id="mBank">0</b> shekels<small id="mCps">0 per second</small></span>
+</header>
+
 <div id="app">
-  <!-- ===== Left: the coin ===== -->
-  <section id="hearth" aria-label="Your coin">
+  <!-- ===== Left: the mint ===== -->
+  <section id="hearth" aria-label="The coin">
+    <canvas id="sky" aria-hidden="true"></canvas>
     <canvas id="rain" aria-hidden="true"></canvas>
-    <div id="honey" aria-hidden="true">
-      <svg class="wave w1" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q150 0 300 20 T600 20 T900 20 T1200 20 V40 H0Z"/></svg>
-      <svg class="wave w2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q150 40 300 20 T600 20 T900 20 T1200 20 V40 H0Z"/></svg>
-      <div class="honeybody"></div>
-    </div>
+    <div id="honey" aria-hidden="true"><div class="hwave"></div><div class="hbody"></div></div>
     <header class="brand">
-      <h1 class="title">Shekel Clicker</h1>
-      <button id="commName" class="commname" title="Rename your community">Your Congregation</button>
+      <button id="commName" class="plaque" title="Rename your community"><span class="pl-name">Your Congregation</span><span class="pl-sub">'s Mint</span></button>
+      <div class="bank"><span id="bank">0</span> <span class="unit">shekels</span></div>
+      <div class="cps" id="cpsLine">0 per second</div>
     </header>
-    <div class="bank"><span id="bank">0</span><small>shekels</small></div>
-    <div class="cps" id="cpsLine">0 per second</div>
     <div class="coinwrap">
-      <div class="halo"></div>
-      <button id="coin" aria-label="Mint a shekel"></button>
+      <div class="halo" aria-hidden="true"></div>
+      <canvas id="orbit" aria-hidden="true"></canvas>
+      <button id="coin" aria-label="Click the shekel"></button>
     </div>
-    <button id="pom" class="pom" hidden aria-label="Pomegranates">
-      <span class="pomart"></span>
-      <svg class="pomring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><circle id="pomArc" cx="20" cy="20" r="17"/></svg>
-      <span class="pomn" id="pomN">0</span>
-    </button>
     <div id="buffs" aria-live="polite"></div>
     <div id="seasonTag"></div>
+    <button id="pom" class="pom" hidden aria-label="Pomegranates">
+      <span class="pomart"></span>
+      <span class="pombar"><i id="pomArc"></i></span>
+      <span class="pomn" id="pomN">0</span>
+    </button>
   </section>
 
-  <!-- ===== Middle ===== -->
+  <div class="divider" aria-hidden="true"></div>
+
+  <!-- ===== Middle: the community ===== -->
   <section id="middle" aria-label="Your community">
-    <div id="ticker" role="button" tabindex="0" title="Next headline"></div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="hood" aria-selected="true">Neighborhood</button>
-      <button class="tab" role="tab" data-tab="mg" aria-selected="false">Minigames</button>
-      <button class="tab" role="tab" data-tab="ach" aria-selected="false">Achievements</button>
-      <button class="tab" role="tab" data-tab="gen" aria-selected="false">Tzedakah &amp; Generations</button>
-      <button class="tab" role="tab" data-tab="hol" aria-selected="false">Holidays</button>
-      <button class="tab" role="tab" data-tab="juke" aria-selected="false">Jukebox</button>
-      <button class="tab" role="tab" data-tab="stats" aria-selected="false">Stats</button>
-      <button class="tab" role="tab" data-tab="opt" aria-selected="false">Options</button>
+    <div id="tickbar">
+      <span class="tk-label">News</span>
+      <div id="ticker" role="button" tabindex="0" title="Next headline"></div>
     </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="hood" data-ic="house" aria-selected="true"><span class="ti"></span><span>Neighborhood</span></button>
+      <button class="tab" role="tab" data-tab="story" data-ic="scroll" aria-selected="false"><span class="ti"></span><span>Story</span><i class="dot" id="storyDot" hidden></i></button>
+      <button class="tab" role="tab" data-tab="mg" data-ic="sprout" aria-selected="false"><span class="ti"></span><span>Minigames</span></button>
+      <button class="tab" role="tab" data-tab="ach" data-ic="star" aria-selected="false"><span class="ti"></span><span>Achievements</span></button>
+      <button class="tab" role="tab" data-tab="gen" data-ic="tree" aria-selected="false"><span class="ti"></span><span>Generations</span></button>
+      <button class="tab" role="tab" data-tab="hol" data-ic="calendar" aria-selected="false"><span class="ti"></span><span>Holidays</span></button>
+      <button class="tab" role="tab" data-tab="juke" data-ic="note" aria-selected="false"><span class="ti"></span><span>Jukebox</span></button>
+      <button class="tab" role="tab" data-tab="stats" data-ic="clock" aria-selected="false"><span class="ti"></span><span>Stats</span></button>
+      <button class="tab" role="tab" data-tab="opt" data-ic="gear" aria-selected="false"><span class="ti"></span><span>Options</span></button>
+    </nav>
     <div class="panels">
       <div class="panel on" id="p-hood">
         <div id="hood"></div>
       </div>
 
-      <div class="panel" id="p-mg">
+      <div class="panel paper" id="p-story">
+        <h2>The story so far</h2>
+        <p class="lede">Every milestone uncovers a little more of the writing on the coin's edge. Replay any chapter you have reached.</p>
+        <div id="chapters"></div>
+      </div>
+
+      <div class="panel paper" id="p-mg">
         <h2>Minigames</h2>
-        <p>Level up buildings with pomegranates to open minigames. Pomegranates start ripening once you have earned one billion shekels all-time.</p>
+        <p class="lede">Level up buildings with pomegranates to open minigames. Pomegranates start ripening once you have earned one billion shekels all-time.</p>
         <div id="mg"></div>
       </div>
 
-      <div class="panel" id="p-ach">
+      <div class="panel paper" id="p-ach">
         <h2>Achievements</h2>
-        <p>Each achievement adds <b>nachas</b>: +1% to all production, and it powers the family upgrades in the store. <span id="nachas"></span></p>
+        <p class="lede">Each achievement adds <b>nachas</b>: +1% to all production, and it powers the family upgrades in the store. <span id="nachas"></span></p>
         <div id="achs"></div>
       </div>
 
-      <div class="panel" id="p-gen">
+      <div class="panel paper" id="p-gen">
         <h2>Tzedakah box</h2>
-        <p>Giving is the whole point. Every gift grants a <b>Chai</b> blessing (+18% production for 60 seconds), and lifetime giving adds a small permanent bonus.</p>
+        <p class="lede">Giving is the whole point. Every gift grants a <b>Chai</b> blessing (+18% production for 60 seconds), and lifetime giving adds a small permanent bonus.</p>
         <div class="row">
           <button class="btn" id="give10">Give 10% of my shekels</button>
           <button class="btn ghost" id="give50">Give half</button>
@@ -88,27 +111,27 @@
         <p>Given so far: <b id="givenAmt">0</b> · Permanent bonus: <b id="givenBonus">+0%</b></p>
 
         <h2 class="mt">L'dor v'dor: from generation to generation</h2>
-        <p>Pass everything on to the next generation. You start over with your achievements, building levels, and heritage. Each heritage point adds +1% production forever and can be spent once on heirlooms below.</p>
+        <p class="lede">Pass everything on to the next generation. You start over with your achievements, building levels, and heritage. Each heritage point adds +1% production forever and can be spent once on heirlooms below.</p>
         <div class="herbox">
           <div><span class="hl">Heritage level</span><b id="herNow">0</b></div>
-          <div><span class="hl">Heirloom points to spend</span><b id="chips">0</b></div>
+          <div><span class="hl">Heirloom points</span><b id="chips">0</b></div>
           <div><span class="hl">Ready to pass on</span><b id="herPend">0</b></div>
-          <div><span class="hl">Next point at</span><b id="herNext">—</b></div>
+          <div><span class="hl">Next point at</span><b id="herNext">0</b></div>
         </div>
         <div class="row"><button class="btn warn" id="ascend" disabled>Start the next generation</button></div>
         <h3>Heirlooms</h3>
         <div id="heirlooms"></div>
       </div>
 
-      <div class="panel" id="p-hol">
+      <div class="panel paper" id="p-hol">
         <h2>Holidays</h2>
-        <p id="holHint"></p>
+        <p class="lede" id="holHint"></p>
         <div id="seasons"></div>
       </div>
 
-      <div class="panel" id="p-juke">
+      <div class="panel paper" id="p-juke">
         <h2>Jukebox</h2>
-        <p>Hava Nagila, played live by a band in your browser. While the jukebox plays, production is +5%. In Hora mode the band speeds up every time through, like any good wedding.</p>
+        <p class="lede">Hava Nagila, played live by a band in your browser. While the jukebox plays, production is +5%. In Hora mode the band speeds up every time through, like any good wedding.</p>
         <div class="juke">
           <div class="record" id="record"><span class="lbl">הבה<br>נגילה</span></div>
           <div class="jinfo">
@@ -120,30 +143,32 @@
           </div>
         </div>
         <div class="jcontrols">
-          <label class="opt">Mode
+          <label class="opt"><span>Mode</span>
             <select id="jMode"><option value="steady">Steady tempo</option><option value="hora">Hora (keeps speeding up)</option></select>
           </label>
-          <label class="opt">Lead
+          <label class="opt"><span>Lead</span>
             <select id="jInst"><option value="clarinet">Klezmer clarinet</option><option value="fiddle">Fiddle</option><option value="accordion">Accordion</option><option value="chip">8-bit arcade</option></select>
           </label>
-          <label class="opt"><input type="checkbox" id="jBand" checked> Full band (bass, chords, drums)</label>
-          <label class="opt">Tempo <input type="range" id="jTempo" min="90" max="260" value="152"> <span id="jTempoV">152 bpm</span></label>
-          <label class="opt">Volume <input type="range" id="jVol" min="0" max="100" value="60"></label>
+          <label class="opt"><input type="checkbox" id="jBand" checked> <span>Full band (bass, chords, drums)</span></label>
+          <label class="opt"><span>Tempo</span> <input type="range" id="jTempo" min="90" max="260" value="152"> <span id="jTempoV">152 bpm</span></label>
+          <label class="opt"><span>Volume</span> <input type="range" id="jVol" min="0" max="100" value="60"></label>
         </div>
       </div>
 
-      <div class="panel" id="p-stats">
+      <div class="panel paper" id="p-stats">
         <h2>Stats</h2>
         <dl class="stats" id="statList"></dl>
         <h3>Purchased upgrades (<span id="boughtCount">0</span>)</h3>
         <div class="upgrid" id="bought"></div>
       </div>
 
-      <div class="panel" id="p-opt">
+      <div class="panel paper" id="p-opt">
         <h2>Options</h2>
-        <label class="opt"><input type="checkbox" id="optSound" checked> Sound effects</label>
-        <label class="opt"><input type="checkbox" id="optRain" checked> Falling coins and click sparkles</label>
-        <label class="opt"><input type="checkbox" id="optSci"> Scientific notation for big numbers</label>
+        <label class="opt"><input type="checkbox" id="optSound" checked> <span>Sound effects</span></label>
+        <label class="opt"><input type="checkbox" id="optRain" checked> <span>Falling coins and click sparkles</span></label>
+        <label class="opt"><input type="checkbox" id="optStory" checked> <span>Show story scenes when a chapter unlocks</span></label>
+        <label class="opt"><input type="checkbox" id="optSci"> <span>Scientific notation for big numbers</span></label>
+        <label class="opt"><input type="checkbox" id="optLow"> <span>Low-power mode (stops the moving decorations; easier on older computers and batteries)</span></label>
         <h3>Saving</h3>
         <p>The game saves in this browser every 30 seconds. Use a save code to move your game to another device or keep a backup.</p>
         <div class="row">
@@ -154,21 +179,26 @@
         <textarea id="saveBox" placeholder="Your save code appears here. To load a game, paste a code here and choose Load save code."></textarea>
         <h3>Start fresh</h3>
         <div class="row"><button class="btn warn" id="wipeBtn">Wipe save</button></div>
-        <h3>About</h3>
-        <p>Shekel Clicker is a fan-made idle game inspired by Cookie Clicker. Hava Nagila is a traditional folk melody, first published in 1922; the arrangement here is synthesized live in your browser.</p>
+        <h3>Keyboard</h3>
+        <p><kbd>Space</kbd> clicks the coin while the page has focus. <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> set the buy amount to 1, 10 or 100. <kbd>S</kbd> switches between buying and selling.</p>
+        <h3>About and privacy</h3>
+        <p>Shekel Clicker is a fan-made idle game inspired by Orteil's Cookie Clicker. Your save lives only in this browser's local storage; the game sends nothing anywhere and loads no outside scripts, fonts, or trackers. Hava Nagila is a traditional folk melody, first published in 1922; the arrangement here is synthesized live in your browser. Pixel art drawn for this game. Fonts: Pixelify Sans and Frank Ruhl Libre (SIL Open Font License).</p>
       </div>
     </div>
   </section>
 
-  <!-- ===== Right: store ===== -->
+  <div class="divider" aria-hidden="true"></div>
+
+  <!-- ===== Right: the store ===== -->
   <aside id="store" aria-label="Store">
+    <div class="sthead"><h2 class="plaque small">Store</h2></div>
     <div class="upbox">
-      <div class="boxhead"><h2>Upgrades</h2><button id="buyAll" class="mini">Buy all I can afford</button></div>
+      <div class="boxhead"><h3>Upgrades</h3><button id="buyAll" class="mini">Buy all</button></div>
       <div id="upgrades" class="upgrid collapsed"></div>
       <button id="upToggle" class="linkbtn" hidden>Show all</button>
     </div>
     <div class="boxhead buildhead">
-      <h2>Build</h2>
+      <h3>Buildings</h3>
       <div class="segs">
         <div class="seg" role="group" aria-label="Buy or sell">
           <button data-mode="buy" aria-pressed="true">Buy</button><button data-mode="sell" aria-pressed="false">Sell</button>
@@ -182,15 +212,35 @@
   </aside>
 </div>
 
+<!-- Phone navigation -->
+<nav id="mnav" aria-label="Views">
+  <button data-view="mint" aria-pressed="true"><span class="ni" data-ic="coin"></span>Coin</button>
+  <button data-view="store" aria-pressed="false"><span class="ni" data-ic="stall"></span>Store</button>
+  <button data-view="town" aria-pressed="false"><span class="ni" data-ic="house"></span>Town</button>
+</nav>
+
 <canvas id="fx" aria-hidden="true"></canvas>
 <div id="tip" role="tooltip" hidden></div>
 <div id="toasts" aria-live="polite"></div>
+
+<div id="scene" hidden>
+  <div class="sbox" role="dialog" aria-modal="true" aria-labelledby="scTitle">
+    <p class="sc-chap" id="scChap"></p>
+    <h3 id="scTitle"></h3>
+    <div class="sc-body">
+      <div class="sc-port" id="scPort"></div>
+      <div class="sc-text"><b id="scWho"></b><p id="scLine"></p></div>
+    </div>
+    <div class="row end"><button class="btn ghost" id="scSkip">Skip scene</button><button class="btn" id="scNext">Next</button></div>
+  </div>
+</div>
+
 <div id="modal" hidden>
   <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle">
     <h3 id="mTitle"></h3>
     <p id="mText"></p>
     <input id="mInput" maxlength="40" autocomplete="off">
-    <div class="row"><button id="mOk" class="btn">Save</button><button id="mCancel" class="btn ghost">Cancel</button></div>
+    <div class="row end"><button id="mCancel" class="btn ghost">Cancel</button><button id="mOk" class="btn">Save</button></div>
   </div>
 </div>
 </body>

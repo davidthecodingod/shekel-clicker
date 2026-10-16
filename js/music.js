@@ -8,9 +8,12 @@
    Durations are in eighth notes; every bar is 8 eighths (4/4).
    ===================================================================== */
 const Sound = (() => {
-  let ac = null, master, sfxBus, musBus, verbIn;
+  let ac = null, master, sfxBus, musBus, verbIn, gestured = false;
+  // Browsers only allow audio after the player interacts, so nothing is created until then.
+  for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => { gestured = true; }, {capture:true, once:true});
   function ctx() {
     if (!ac) {
+      if (!gestured) return null;
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ac = new AC();
