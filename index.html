@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shekel Clicker</title>
+<meta name="description" content="A Jewish-themed idle clicker: braid challah, build shuls, catch golden gelt, and dance the hora.">
+<meta name="theme-color" content="#142B4F">
+<meta property="og:title" content="Shekel Clicker">
+<meta property="og:description" content="Braid challah, build shuls, catch golden gelt, and dance the hora.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/art.js"></script>
+<script defer src="js/data.js"></script>
+<script defer src="js/music.js"></script>
+<script defer src="js/game.js"></script>
+<script defer src="js/minigames.js"></script>
+</head>
+<body>
+<div id="app">
+  <!-- ===== Left: the coin ===== -->
+  <section id="hearth" aria-label="Your coin">
+    <canvas id="rain" aria-hidden="true"></canvas>
+    <div id="honey" aria-hidden="true">
+      <svg class="wave w1" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q150 0 300 20 T600 20 T900 20 T1200 20 V40 H0Z"/></svg>
+      <svg class="wave w2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q150 40 300 20 T600 20 T900 20 T1200 20 V40 H0Z"/></svg>
+      <div class="honeybody"></div>
+    </div>
+    <header class="brand">
+      <h1 class="title">Shekel Clicker</h1>
+      <button id="commName" class="commname" title="Rename your community">Your Congregation</button>
+    </header>
+    <div class="bank"><span id="bank">0</span><small>shekels</small></div>
+    <div class="cps" id="cpsLine">0 per second</div>
+    <div class="coinwrap">
+      <div class="halo"></div>
+      <button id="coin" aria-label="Mint a shekel"></button>
+    </div>
+    <button id="pom" class="pom" hidden aria-label="Pomegranates">
+      <span class="pomart"></span>
+      <svg class="pomring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><circle id="pomArc" cx="20" cy="20" r="17"/></svg>
+      <span class="pomn" id="pomN">0</span>
+    </button>
+    <div id="buffs" aria-live="polite"></div>
+    <div id="seasonTag"></div>
+  </section>
+
+  <!-- ===== Middle ===== -->
+  <section id="middle" aria-label="Your community">
+    <div id="ticker" role="button" tabindex="0" title="Next headline"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="hood" aria-selected="true">Neighborhood</button>
+      <button class="tab" role="tab" data-tab="mg" aria-selected="false">Minigames</button>
+      <button class="tab" role="tab" data-tab="ach" aria-selected="false">Achievements</button>
+      <button class="tab" role="tab" data-tab="gen" aria-selected="false">Tzedakah &amp; Generations</button>
+      <button class="tab" role="tab" data-tab="hol" aria-selected="false">Holidays</button>
+      <button class="tab" role="tab" data-tab="juke" aria-selected="false">Jukebox</button>
+      <button class="tab" role="tab" data-tab="stats" aria-selected="false">Stats</button>
+      <button class="tab" role="tab" data-tab="opt" aria-selected="false">Options</button>
+    </div>
+    <div class="panels">
+      <div class="panel on" id="p-hood">
+        <div id="hood"></div>
+      </div>
+
+      <div class="panel" id="p-mg">
+        <h2>Minigames</h2>
+        <p>Level up buildings with pomegranates to open minigames. Pomegranates start ripening once you have earned one billion shekels all-time.</p>
+        <div id="mg"></div>
+      </div>
+
+      <div class="panel" id="p-ach">
+        <h2>Achievements</h2>
+        <p>Each achievement adds <b>nachas</b>: +1% to all production, and it powers the family upgrades in the store. <span id="nachas"></span></p>
+        <div id="achs"></div>
+      </div>
+
+      <div class="panel" id="p-gen">
+        <h2>Tzedakah box</h2>
+        <p>Giving is the whole point. Every gift grants a <b>Chai</b> blessing (+18% production for 60 seconds), and lifetime giving adds a small permanent bonus.</p>
+        <div class="row">
+          <button class="btn" id="give10">Give 10% of my shekels</button>
+          <button class="btn ghost" id="give50">Give half</button>
+        </div>
+        <p>Given so far: <b id="givenAmt">0</b> · Permanent bonus: <b id="givenBonus">+0%</b></p>
+
+        <h2 class="mt">L'dor v'dor: from generation to generation</h2>
+        <p>Pass everything on to the next generation. You start over with your achievements, building levels, and heritage. Each heritage point adds +1% production forever and can be spent once on heirlooms below.</p>
+        <div class="herbox">
+          <div><span class="hl">Heritage level</span><b id="herNow">0</b></div>
+          <div><span class="hl">Heirloom points to spend</span><b id="chips">0</b></div>
+          <div><span class="hl">Ready to pass on</span><b id="herPend">0</b></div>
+          <div><span class="hl">Next point at</span><b id="herNext">—</b></div>
+        </div>
+        <div class="row"><button class="btn warn" id="ascend" disabled>Start the next generation</button></div>
+        <h3>Heirlooms</h3>
+        <div id="heirlooms"></div>
+      </div>
+
+      <div class="panel" id="p-hol">
+        <h2>Holidays</h2>
+        <p id="holHint"></p>
+        <div id="seasons"></div>
+      </div>
+
+      <div class="panel" id="p-juke">
+        <h2>Jukebox</h2>
+        <p>Hava Nagila, played live by a band in your browser. While the jukebox plays, production is +5%. In Hora mode the band speeds up every time through, like any good wedding.</p>
+        <div class="juke">
+          <div class="record" id="record"><span class="lbl">הבה<br>נגילה</span></div>
+          <div class="jinfo">
+            <p class="nowplaying" id="np">Hava Nagila</p>
+            <p class="lyric" id="lyric">Press play to start the band.</p>
+            <div class="meter"><i id="npBar"></i></div>
+            <div id="npSub" class="npsub">Stopped</div>
+            <button class="btn big" id="playBtn">Play Hava Nagila</button>
+          </div>
+        </div>
+        <div class="jcontrols">
+          <label class="opt">Mode
+            <select id="jMode"><option value="steady">Steady tempo</option><option value="hora">Hora (keeps speeding up)</option></select>
+          </label>
+          <label class="opt">Lead
+            <select id="jInst"><option value="clarinet">Klezmer clarinet</option><option value="fiddle">Fiddle</option><option value="accordion">Accordion</option><option value="chip">8-bit arcade</option></select>
+          </label>
+          <label class="opt"><input type="checkbox" id="jBand" checked> Full band (bass, chords, drums)</label>
+          <label class="opt">Tempo <input type="range" id="jTempo" min="90" max="260" value="152"> <span id="jTempoV">152 bpm</span></label>
+          <label class="opt">Volume <input type="range" id="jVol" min="0" max="100" value="60"></label>
+        </div>
+      </div>
+
+      <div class="panel" id="p-stats">
+        <h2>Stats</h2>
+        <dl class="stats" id="statList"></dl>
+        <h3>Purchased upgrades (<span id="boughtCount">0</span>)</h3>
+        <div class="upgrid" id="bought"></div>
+      </div>
+
+      <div class="panel" id="p-opt">
+        <h2>Options</h2>
+        <label class="opt"><input type="checkbox" id="optSound" checked> Sound effects</label>
+        <label class="opt"><input type="checkbox" id="optRain" checked> Falling coins and click sparkles</label>
+        <label class="opt"><input type="checkbox" id="optSci"> Scientific notation for big numbers</label>
+        <h3>Saving</h3>
+        <p>The game saves in this browser every 30 seconds. Use a save code to move your game to another device or keep a backup.</p>
+        <div class="row">
+          <button class="btn" id="saveNow">Save now</button>
+          <button class="btn ghost" id="exportBtn">Show save code</button>
+          <button class="btn ghost" id="importBtn">Load save code</button>
+        </div>
+        <textarea id="saveBox" placeholder="Your save code appears here. To load a game, paste a code here and choose Load save code."></textarea>
+        <h3>Start fresh</h3>
+        <div class="row"><button class="btn warn" id="wipeBtn">Wipe save</button></div>
+        <h3>About</h3>
+        <p>Shekel Clicker is a fan-made idle game inspired by Cookie Clicker. Hava Nagila is a traditional folk melody, first published in 1922; the arrangement here is synthesized live in your browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Right: store ===== -->
+  <aside id="store" aria-label="Store">
+    <div class="upbox">
+      <div class="boxhead"><h2>Upgrades</h2><button id="buyAll" class="mini">Buy all I can afford</button></div>
+      <div id="upgrades" class="upgrid collapsed"></div>
+      <button id="upToggle" class="linkbtn" hidden>Show all</button>
+    </div>
+    <div class="boxhead buildhead">
+      <h2>Build</h2>
+      <div class="segs">
+        <div class="seg" role="group" aria-label="Buy or sell">
+          <button data-mode="buy" aria-pressed="true">Buy</button><button data-mode="sell" aria-pressed="false">Sell</button>
+        </div>
+        <div class="seg" role="group" aria-label="Amount">
+          <button data-qty="1" aria-pressed="true">1</button><button data-qty="10" aria-pressed="false">10</button><button data-qty="100" aria-pressed="false">100</button>
+        </div>
+      </div>
+    </div>
+    <ul id="buildings"></ul>
+  </aside>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="tip" role="tooltip" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="modal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <input id="mInput" maxlength="40" autocomplete="off">
+    <div class="row"><button id="mOk" class="btn">Save</button><button id="mCancel" class="btn ghost">Cancel</button></div>
+  </div>
+</div>
+</body>
+</html>
