@@ -35,7 +35,8 @@ const PX = (() => {
   function sprite(name, swap, layers) {
     const key = name + JSON.stringify(swap || '') + JSON.stringify(layers || '');
     if (cache[key]) return cache[key];
-    const rows = SPR[name] || SPR.missing;
+    if (!SPR[name]) name = 'star';
+    const rows = SPR[name];
     const c = canvas(rows[0].length, rows.length), ctx = c.getContext('2d');
     // putImageData overwrites, so draw layers onto a scratch canvas and composite
     blit(ctx, name, 0, 0, swap);

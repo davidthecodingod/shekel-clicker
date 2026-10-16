@@ -728,7 +728,7 @@ function statsUI() {
     ['Shuk trades', S.market.trades.toLocaleString()], ['Shuk profit', fmt(S.market.profit)], ['Production multiplier', '×' + globalMult(true).toFixed(2)],
     ['This generation', fmtTime((NOW() - S.genStart) / 1000)], ['Playing since', new Date(S.start).toLocaleDateString()],
   ];
-  $('#statList').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  $('#statList').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
 }
 
 /* ================= TICKER ================= */
@@ -858,7 +858,13 @@ function load(code) {
   storyFromOldSave = !d.story;
   S.up = (S.up || []).map(id => /^[a-z]+_\d$/.test(id) ? id.replace(/_(\d)$/, '_t$1') : id);
   upSet = new Set(S.up.filter(id => UPG[id])); achSet = new Set((S.ach || []).filter(id => ACHMAP[id])); hupSet = new Set(S.hup || []);
-  S.buffs = (S.buffs || []).filter(b => b.end > NOW());
+  // save codes can be pasted from anywhere: keep only well-formed buffs with known icons
+  const okIcon = i => i == null || (typeof i === 'string' && SPR[i]) || (typeof i === 'object' && i && SPR[i.name]);
+  S.buffs = (Array.isArray(S.buffs) ? S.buffs : []).filter(b => b && typeof b.name === 'string' && +b.end > NOW() && okIcon(b.icon))
+    .map(b => ({name:b.name.slice(0, 60), end:+b.end, icon:typeof b.icon === 'string' ? b.icon : b.icon ? {name:b.icon.name} : undefined,
+      ...(+b.cps ? {cps:+b.cps} : {}), ...(+b.click ? {click:+b.click} : {})}));
+  for (const k of ['bank','earned','allTime','handmade','clicks','golden','given','heritage','chips','gens','levelsTotal','critTotal','loops','tickerClicks'])
+    { S[k] = +S[k]; if (!isFinite(S[k]) || S[k] < 0) S[k] = 0; }
   if (!SEASONS[S.season]) S.season = 'none';
   Object.assign(opts, data.opts || {});
   if (data.music) { Object.assign(Music, {mode:data.music.mode || 'steady', inst:data.music.inst || 'clarinet', bpm:data.music.bpm || 152, band:data.music.band !== false}); $('#jVol').value = data.music.vol ?? 60; }
