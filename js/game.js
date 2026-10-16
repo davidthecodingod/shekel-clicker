@@ -672,6 +672,9 @@ function renderSeasons() {
   $('#holHint').innerHTML = has
     ? 'Pick a holiday to celebrate. Each one boosts different things, and holiday visitors float across the screen: catch them for shekels and a chance at holiday treasures (upgrades you can only find this way).'
     : 'Buy the <b>Luach</b> upgrade to unlock holiday seasons. It appears in the store after you earn one million shekels.';
+  const se = SEASONS[S.season];
+  $('#seasonTag').innerHTML = S.season === 'none' ? '' : `${sprImg(ICONS['s_' + S.season], 24)}${se.name}`;
+  if (curTab !== 'hol') return;  // the cards are only built while the Holidays tab is open
   const box = $('#seasons'); box.innerHTML = '';
   Object.entries(SEASONS).forEach(([id, s]) => {
     const d = document.createElement('div'); d.className = 'card' + (S.season === id ? ' cur' : '');
@@ -687,8 +690,7 @@ function renderSeasons() {
     });
     d.appendChild(btn); box.appendChild(d);
   });
-  const se = SEASONS[S.season];
-  $('#seasonTag').innerHTML = S.season === 'none' ? '' : `${sprImg(ICONS['s_' + S.season], 24)}${se.name}`;
+
 }
 
 /* ================= JUKEBOX ================= */
@@ -866,7 +868,7 @@ function afterLoad() {
   $('#optSound').checked = opts.sound; $('#optRain').checked = opts.rain; $('#optSci').checked = opts.sci; $('#optStory').checked = opts.story !== false; $('#optLow').checked = !!opts.lowpower; applyLowPower();
   Sound.sfx.on = opts.sound;
   $('#jMode').value = Music.mode; $('#jInst').value = Music.inst; $('#jBand').checked = Music.band; syncTempoUI();
-  recalc(); renderName(); renderAch(); renderSeasons(); refreshUpgrades(true); updateStore(); renderHood(true); genUI(); renderHeirlooms(true); renderBuffs(); renderPom();
+  recalc(); renderName(); setHoney(); renderSeasons(); refreshUpgrades(true); updateStore(); renderHood(true); genUI(); if (curTab === 'gen') renderHeirlooms(true); if (curTab === 'ach') renderAch(); renderBuffs(); renderPom();
 }
 
 /* ================= TABS & CONTROLS ================= */
@@ -879,6 +881,7 @@ function showTab(name) {
   if (name === 'stats') { statsUI(); renderBought(); }
   if (name === 'gen') { genUI(); renderHeirlooms(true); }
   if (name === 'ach') renderAch();
+  if (name === 'hol') renderSeasons();
   if (name === 'mg') renderMinigames(true);
   if (name === 'hood') renderHood(true);
   if (name === 'story') renderStory();
@@ -1001,7 +1004,7 @@ function tick() {
   earn(curCps * dt);
   if (t >= nextGelt) { spawnGelt(); nextGelt = t + geltDelay(); }
   if (S.season !== 'none' && hasLuach() && t >= nextCrit) { spawnCritter(); nextCrit = t + critDelay(); }
-  if (document.hidden) { slow += dt; if (slow >= 5) { slow = 0; recalc(); checkAch(true); pomTick(); marketTick(); } return; }
+  if (document.hidden) { slow += dt; if (slow >= 5) { slow = 0; recalc(); checkAch(); pomTick(); marketTick(); } return; }
   const bankTxt = fmt(S.bank), cpsTxt = fmt(curCps, true) + ' per second' + (S.buffs.length ? ' (boosted)' : '');
   if (bankTxt !== lastBankTxt) { lastBankTxt = bankTxt; $('#bank').textContent = bankTxt; $('#mBank').textContent = bankTxt; }
   if (cpsTxt !== lastCpsTxt) { lastCpsTxt = cpsTxt; $('#cpsLine').textContent = cpsTxt; $('#mCps').textContent = cpsTxt; }
@@ -1058,7 +1061,7 @@ function boot() {
     if (c) { load(c); loaded = true; }
   } catch (e) {}
   afterLoad();
-  checkAch(true); renderAch();
+  checkAch(true); setHoney();
   if (loaded && storyFromOldSave) {
     storyCheck(true);
     toast('The story', 'Shekel Clicker now has a story. Everything you have reached so far is in the Story tab.', {name:'scroll'});
