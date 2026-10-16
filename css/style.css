@@ -153,7 +153,7 @@ kbd{display:inline-block;padding:0 6px;background:var(--parch);border:2px solid 
 .up.sm{width:40px;height:40px;cursor:default;border-width:2px}
 .up.sm img{width:32px;height:32px}
 .up.sm:hover{transform:none}
-#upgrades.collapsed{max-height:128px;overflow:hidden}
+#upgrades.collapsed{max-height:118px;overflow:hidden}
 #achs{display:flex;flex-wrap:wrap;gap:6px}
 .ach{width:52px;height:52px;padding:0;display:grid;place-items:center;cursor:default;background:var(--parch2);border:3px solid var(--khaki);box-shadow:inset 3px 3px 0 rgba(0,0,0,.12)}
 .ach img{width:32px;height:32px;filter:brightness(0) opacity(.28)}
@@ -283,7 +283,7 @@ select{background:var(--parch);color:var(--ink);border:3px solid var(--ink);padd
 .bld .ic{width:56px;height:56px;display:grid;place-items:center;background:rgba(16,10,20,.45);box-shadow:inset 2px 2px 0 rgba(0,0,0,.4)}
 .bld .ic img{width:48px;height:48px}
 .bld .nm{display:block;font-family:var(--f-pix);font-weight:600;font-size:19px;line-height:1.1;text-shadow:2px 2px 0 var(--ink)}
-.bld .pr{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-pix);font-size:15px;color:var(--olive-lt);text-shadow:2px 2px 0 var(--ink)}
+.bld .pr{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-pix);font-size:15px;color:#c8f08a;text-shadow:2px 2px 0 var(--ink),-1px -1px 0 var(--ink),1px -1px 0 var(--ink),-1px 1px 0 var(--ink)}
 .bld .pr img{width:16px;height:16px}
 .bld.poor .pr{color:#ff8a8a}
 .bld.poor .nm,.bld.poor .ic img{opacity:.6}
@@ -330,7 +330,7 @@ select{background:var(--parch);color:var(--ink);border:3px solid var(--ink);padd
 .mbox p{margin:0 0 var(--sp3)}
 .mbox input{width:100%;padding:8px 10px;border:3px solid var(--ink);background:#fff;color:var(--ink);font:inherit;border-radius:0}
 .mbox input[hidden]{display:none}
-#scene{align-items:end;background:rgba(10,6,16,.5)}
+#scene{align-items:end;background:rgba(10,6,16,.7)}
 .sbox{width:min(720px,100%);margin-bottom:6vh;background:var(--night);color:var(--parch);border:6px solid var(--gold);border-image:var(--fr-brass) 4 / 12px stretch;padding:var(--sp4) var(--sp6) var(--sp3);box-shadow:8px 8px 0 rgba(10,6,16,.6);animation:tin .25s steps(4)}
 .sc-chap{margin:0;font-family:var(--f-pix);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky)}
 .sbox h3{margin:2px 0 var(--sp3);font-family:var(--f-pix);font-size:24px;color:var(--gold-hi)}

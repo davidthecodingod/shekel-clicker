@@ -17,7 +17,7 @@ async function route(p) {
   const b = await chromium.launch({ executablePath: exe });
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
   const errs = [];
-  p.on('console', m => { if (m.type() === 'error' && !/404/.test(m.text())) errs.push(m.text()); });
+  p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
   await route(p);
   await p.goto('http://shekel.test/'); await p.waitForTimeout(1500);
