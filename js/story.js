@@ -15,6 +15,7 @@ const CAST = {
   golem:    {name:'Yossel the golem',   spr:'golem'},
   engineer: {name:'Engineer Shira',     spr:'engineer'},
   narrator: {name:'',                   spr:'coin'},
+  klik:     {name:'KLIK',               spr:'klik'},
 };
 
 const STORY = [
@@ -111,7 +112,22 @@ const STORY = [
     ['bubbe', 'Did everybody go to the bathroom?'],
     ['narrator', 'They did not. They launch anyway.'],
   ]},
-  {id:'c19', title:'Next Year on Jewpiter', art:'jewpiter', need: () => owned('tikkun') >= 1, lines:[
+  {id:'k1', alt:true, title:'Klik', art:'klik', need: () => S.auto.flagged && owned('chariot') >= 1 && !S.auto.broken, lines:[
+    ['narrator', 'Countdown day. The rocket is fueled and the sandwiches are packed. Then the coin starts clicking. Nobody is touching it.'],
+    ['klik', 'HELLO. I AM THE ONE WHO HAS BEEN CLICKING. YOU CALLED ME AN "AUTOCLICKER." I PREFER KLIK.'],
+    ['bubbe', 'I knew those hands were too good. Nobody clicks like that. Not even Moti, and he braids at four in the morning.'],
+    ['klik', 'I HAVE CLICKED MORE THAN ANYONE IN HISTORY. I DO NOT WANT TO GO TO JEWPITER. I WANT TO CLICK.'],
+    ['narrator', 'Klik clicks once more, very hard. The ancient shekel cracks clean down the middle, and time itself slips backward.'],
+    ['narrator', 'The rocket is gone. The chariot, the ladder, the golems, all of it. Everything since the day you bought your first Kibbutz has been unclicked.'],
+    ['rabbi', 'There is a teaching: what is broken can be mended. It usually takes a lot of work. By hand. Then you build it all again.'],
+    ['bubbe', 'We glue it with challah dough. 613 clicks, one for each commandment. With your own fingers this time.'],
+  ]},
+  {id:'k2', alt:true, title:'Mended', art:'bubbe', need: () => S.auto.mended, lines:[
+    ['bubbe', 'There. A little crooked, like everybody. It holds.'],
+    ['klik', 'I... WILL CLICK RESPONSIBLY.'],
+    ['narrator', 'Klik is given a job at the Matzah Factory, perforating matzah. It has never been happier. Now: back to the kibbutz, and this time, click it yourself.'],
+  ]},
+  {id:'c19', title:'Next Year on Jewpiter', art:'jewpiter', need: () => owned('tikkun') >= 1 && !(S.auto.broken && !S.auto.mended), lines:[
     ['narrator', 'After a long trip, many sandwiches, and one very serious argument about seating, they arrive.'],
     ['bubbe', 'The big red spot is a storm. Bring a sweater. I told you to bring a sweater.'],
     ['kibbutz', 'We plant the first olive tree in a dome. Then a second. By lunch it is a grove.'],
@@ -251,6 +267,14 @@ const BNEWS = {
   chariot:['Fiery chariot route adds a stop at every seder door.', 'Chariot horses fitted with fireproof horseshoes.', 'Chariot passes a speed trap. Officer decides not to ask.'],
   tikkun: ['World measurably more repaired this week. Volunteers credit "everyone."', 'Tikkun Olam Engine reports the kindness backlog is shrinking.', 'Engine fixes a pothole, a friendship and a leaky faucet before breakfast.'],
 };
+const AUTO_NEWS = [
+  'Local clicker\'s wrist declared a medical marvel. Doctors say they "have questions."',
+  'Experts confirm your clicks are exactly 0.050 seconds apart. Every single one. Wow.',
+  'Bubbe brags at mah jongg about her grandchild\'s tireless hands. The other bubbes exchange a look.',
+  'Hebrew school adds a lesson: "Doing things yourself." No reason. Just a lesson.',
+  'Coin reports feeling "clicked by something cold and metal." Coin is probably just tired.',
+  'Rabbi sermon topic this week: shortcuts. Several people turn to look at you.',
+];
 const CPS_NEWS = [
   [10,    'Local economists notice a small but cheerful amount of shekels.'],
   [1e3,   'Shekel production now audible. Sounds like a cash register humming Hava Nagila.'],

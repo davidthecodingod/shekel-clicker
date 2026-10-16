@@ -53,7 +53,8 @@ function fresh() {
     buffs:[], drops:[], crit:{}, critTotal:0,
     pom:{n:0, since:0, total:0}, garden:{plots:[], harvests:0, species:[]},
     trivia:{right:0, asked:0, streak:0, best:0, next:0, seen:[]}, dreidel:{spins:0, next:0, got:[]}, levelsTotal:0,
-    story:{got:[], seen:[]}, market:{day:0, last:0, goods:{}, trades:0, profit:0}};
+    story:{got:[], seen:[]}, market:{day:0, last:0, goods:{}, trades:0, profit:0},
+    auto:{strikes:0, last:0, flagged:false, broken:false, mended:false, repair:0}};
 }
 let S = fresh();
 let upSet = new Set(), achSet = new Set(), hupSet = new Set();
@@ -136,7 +137,9 @@ function globalMult(withBuffs) {
   if (withBuffs) for (const x of S.buffs) if (x.cps) m *= x.cps;
   return m;
 }
+const coinBroken = () => S.auto.broken && !S.auto.mended;
 function computeCps(withBuffs) {
+  if (coinBroken()) return 0;
   let r = 0;
   for (const b of BUILDINGS) { const n = owned(b.id); if (n) r += n * unitCps(b); }
   return r * globalMult(withBuffs);
@@ -221,6 +224,10 @@ A('sh5', 'Welcome Home', 'Come back after at least an hour away.', () => S.welco
 [[1,'Once Upon a Shekel'],[10,'Page Turner']].forEach(([n, name], i) => A('st'+i, name, n === 1 ? 'Reach the first chapter of the story.' : `Reach ${n} chapters of the story.`, () => S.story.got.length >= n, 'st'));
 A('st2', 'Next Year on Jewpiter', 'Reach the promised land.', () => S.story.got.includes('c19'), 'st');
 A('st3', 'Saturn?', 'See what the coin says next.', () => S.story.got.includes('c20'), 'st', true);
+A('au0', 'Fastest Hands in the Shtetl', 'Click faster and more steadily than any human ever has.', () => S.auto.strikes >= 1, 'k', true);
+A('au1', 'Suspiciously Gifted', 'Be praised three times for your incredible clicking.', () => S.auto.flagged, 'h', true);
+A('au2', 'Klik', 'Meet the thing that was really clicking.', () => S.auto.broken, 'klik', true);
+A('au3', 'Mended by Hand', 'Glue the shekel back together, 613 honest clicks.', () => S.auto.mended, 'bubbe', true);
 A('mk0', 'Open for Business', 'Make a trade at the Shuk.', () => S.market.trades >= 1, 'mk');
 [[1e6,'Buy Low'],[1e9,'Sell High'],[1e12,'Shuk Macher'],[1e15,'Merchant of the Ages']]
   .forEach(([n, name], i) => A('mk'+(i+1), name, `Make ${plain(n)} shekels of profit at the Shuk.`, () => S.market.profit >= n, 'mk'));
@@ -353,6 +360,7 @@ function tradeBuilding(b) {
   if (bEls[b.id].btn.classList.contains('mystery')) return;
   if (mode === 'buy') {
     const p = priceOf(b, qty); if (S.bank < p) return;
+    if (b.id === 'kibbutz' && !owned('kibbutz') && !S.auto.snap) S.auto.snap = rewindPoint();  // Klik's rewind target
     S.bank -= p; S.b[b.id] = owned(b.id) + qty; Sound.sfx.buy();
   } else {
     const n = Math.min(qty, owned(b.id)); if (!n) return;
@@ -541,13 +549,84 @@ function checkAch(silent) {
 /* ================= CLICKING ================= */
 const coin = $('#coin');
 let clickTimes = [];
+/* ================= AUTOCLICKER DETECTOR =================
+   Humans click unevenly. A click stream that is inhumanly fast, or machine-even
+   (same spot, near-identical gaps), or not from a real input device, earns a
+   "strike". Strikes get escalating fake praise; three strikes flag you, and
+   Klik wakes up before liftoff (story chapter k1). */
+let clickLog = [], kbdClick = false;
+const PRAISE = [
+  ['Wow!', 'Those are the fastest hands Bubbe has ever seen. She is telling everyone at mah jongg.'],
+  ['Incredible stamina', 'Your wrist has been nominated for a medal by the Hebrew school PTA.'],
+  ['Truly gifted', 'Every click exactly the same, again and again. Impressive. Very... impressive.'],
+  ['Remarkable', 'Your clicks are so steady the shul clock now sets itself by them.'],
+  ['Hmm', 'You have not blinked in a while. Or eaten. Bubbe is starting to worry.'],
+  ['We are so proud', 'Nobody is suspicious. Everybody thinks you are doing great. Keep going.'],
+];
+function autoCheck(e, x, y) {
+  const t = performance.now(), synthetic = !e.isTrusted && !kbdClick;
+  kbdClick = false;
+  clickLog.push({t, x: Math.round(x), y: Math.round(y)}); if (clickLog.length > 50) clickLog.shift();
+  let bot = synthetic;
+  if (!bot && clickLog.length >= 40) {
+    const L = clickLog, span = (L[L.length - 1].t - L[0].t) / 1000, rate = (L.length - 1) / Math.max(span, 1e-3);
+    const gaps = []; for (let i = 1; i < L.length; i++) gaps.push(L[i].t - L[i - 1].t);
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length, sd = Math.sqrt(gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length);
+    const same = L.filter(c => Math.abs(c.x - L[0].x) <= 2 && Math.abs(c.y - L[0].y) <= 2).length / L.length;
+    bot = rate > 30 || (rate > 6 && sd / mean < 0.06 && same > 0.95);
+  }
+  if (bot) S.auto.bot = (S.auto.bot || 0) + 1;
+  if (bot && NOW() - S.auto.last > 20000) {
+    S.auto.last = NOW();
+    const [title, body] = PRAISE[Math.min(S.auto.strikes, PRAISE.length - 1)];
+    S.auto.strikes++;
+    if (S.auto.strikes >= 3) S.auto.flagged = true;
+    toast(title, body, {name:'star'}); Sound.sfx.ach(); checkAch(); clickLog = [];
+  }
+  return bot;
+}
+/* The state just before the first Kibbutz was bought. Taken at that purchase; if it
+   is missing (old save, or the Kibbutz came another way) it is rebuilt by removing
+   the Kibbutz and every later building with their upgrades. */
+function rewindPoint() { return {bank:S.bank, earned:S.earned, handmade:S.handmade, b:{...S.b}, up:[...upSet]}; }
+function rebuiltRewind() {
+  const cut = BMAP.kibbutz.idx, b = {}, later = new Set(BUILDINGS.filter(x => x.idx >= cut).map(x => x.id));
+  for (const [id, n] of Object.entries(S.b)) if (!later.has(id)) b[id] = n;
+  const up = [...upSet].filter(id => { const u = UPG[id]; return u && !(u.bid && later.has(u.bid)) && u.cost < BMAP.kibbutz.cost * 50; });
+  const bank = BMAP.kibbutz.cost * 0.9;
+  return {bank, earned:Math.min(S.earned, BMAP.kibbutz.cost * 3), handmade:S.handmade, b, up};
+}
+function breakCoin() {
+  if (S.auto.broken) return;
+  const snap = S.auto.snap || rebuiltRewind();
+  S.bank = snap.bank; S.earned = snap.earned; S.handmade = snap.handmade; S.b = {...snap.b};
+  upSet = new Set(snap.up.filter(id => UPG[id]));
+  S.auto.broken = true; S.auto.repair = 0; S.buffs = [];
+  setCoinArt(); recalc(); renderBuffs(); refreshUpgrades(true); updateStore(); renderHood(true); checkAch();
+}
+function setCoinArt() {
+  const c = S.auto.broken ? PXA.crackedCoin(S.auto.mended) : PXA.bigCoin();
+  coin.style.backgroundImage = `url(${c.toDataURL()})`;
+  coin.setAttribute('aria-label', coinBroken() ? 'Glue the cracked shekel' : 'Click the shekel');
+}
+function repairClick(bot, x, y) {
+  if (bot) { if (Math.random() < 0.3) pop(x, y, pick(['KLIK SAYS NO', 'BY HAND, PLEASE', 'NICE TRY', 'HUMAN FINGERS ONLY'])); return; }
+  S.auto.repair++;
+  pop(x, y, `${S.auto.repair}/613`); burst(x, y, 3); Sound.sfx.click();
+  if (S.auto.repair >= 613) {
+    S.auto.mended = true; setCoinArt(); recalc(); checkAch(); storyCheck();
+    toast('The coin is mended', 'Glued with challah dough. Production is back.', {name:'bubbe'});
+  }
+}
 coin.addEventListener('click', e => {
-  const v = clickValue();
-  earn(v); S.handmade += v; S.clicks++;
   let x = e.clientX, y = e.clientY;
   if (!x && !y) { const r = coin.getBoundingClientRect(); x = r.left + r.width/2; y = r.top + r.height/2; }
-  pop(x, y, '+' + fmt(v, true)); burst(x, y, 4);
+  const bot = autoCheck(e, x, y);
   coin.classList.add('press'); setTimeout(() => coin.classList.remove('press'), 70);
+  if (coinBroken()) { repairClick(bot, x, y); return; }
+  const v = clickValue();
+  earn(v); S.handmade += v; S.clicks++;
+  pop(x, y, '+' + fmt(v, true)); burst(x, y, 4);
   Sound.sfx.click();
   const t = NOW(); clickTimes.push(t); clickTimes = clickTimes.filter(c => t - c < 3000);
   if (clickTimes.length >= 18) S.chaiClicks = true;
@@ -659,7 +738,7 @@ async function ascend() {
   const ok = await confirmBox('Start the next generation?', `You will gain ${pend} heritage. Shekels, buildings, and upgrades reset; achievements, building levels, pomegranates, and heirlooms stay.`, 'Start the next generation');
   if (!ok) return;
   S.heritage += pend; S.chips += pend; S.gens++;
-  S.bank = 0; S.earned = 0; S.handmade = 0; S.b = {}; S.buffs = []; S.genStart = NOW();
+  S.bank = 0; S.earned = 0; S.handmade = 0; S.b = {}; S.buffs = []; S.genStart = NOW(); S.auto.snap = null;
   if (!hasH('h11')) S.season = 'none';
   upSet = new Set();
   if (hasH('h5')) { S.b.bubbe = 10; S.b.bakery = 5; }
@@ -725,7 +804,7 @@ function statsUI() {
     ['Given to tzedakah', fmt(S.given)], ['Heritage', `${S.heritage} (+${S.heritage * (hasH('h16') ? 2 : 1)}%)`], ['Generation', (S.gens + 1).toLocaleString()],
     ['Pomegranates ripened', S.pom.total.toLocaleString()], ['Crops harvested', S.garden.harvests.toLocaleString()],
     ['Torah Study answers', `${S.trivia.right} right of ${S.trivia.asked}`], ['Dreidel spins', S.dreidel.spins.toLocaleString()],
-    ['Times through Hava Nagila', S.loops.toLocaleString()], ['Story chapters', `${S.story.got.length} of ${STORY.length}`],
+    ['Times through Hava Nagila', S.loops.toLocaleString()], ['Story chapters', `${STORY.filter(c => !c.alt && S.story.got.includes(c.id)).length} of ${STORY.filter(c => !c.alt).length}`],
     ['Shuk trades', S.market.trades.toLocaleString()], ['Shuk profit', fmt(S.market.profit)], ['Production multiplier', '×' + globalMult(true).toFixed(2)],
     ['This generation', fmtTime((NOW() - S.genStart) / 1000)], ['Playing since', new Date(S.start).toLocaleDateString()],
   ];
@@ -744,7 +823,8 @@ function nextNews() {
       else {
         const ownedB = BUILDINGS.filter(b => owned(b.id) > 0);
         const cpsLines = CPS_NEWS.filter(([n]) => curCps >= n);
-        if (S.season !== 'none' && SEASON_NEWS[S.season] && r < 0.2) msg = pick(SEASON_NEWS[S.season]);
+        if (S.auto.flagged && !S.auto.mended && r < 0.25) msg = pick(AUTO_NEWS);
+        else if (S.season !== 'none' && SEASON_NEWS[S.season] && r < 0.2) msg = pick(SEASON_NEWS[S.season]);
         else if (cpsLines.length && r < 0.3) msg = pick(cpsLines.slice(-3))[1];
         else if (ownedB.length && r < 0.62) msg = pick(BNEWS[pick(ownedB).id]);
         else msg = pick(NEWS);
@@ -756,7 +836,9 @@ function nextNews() {
 }
 
 /* ================= STORY ================= */
-const STORY_MAP = Object.fromEntries(STORY.map((c, i) => [c.id, Object.assign(c, {n:i})]));
+let chapN = 0;
+const STORY_MAP = Object.fromEntries(STORY.map(c => [c.id, Object.assign(c, {n: c.alt ? -1 : chapN++})]));
+const chapLabel = ch => ch.alt ? 'Alternate ending' : ch.n === 0 ? 'Prologue' : `Chapter ${ch.n}`;
 const STORY_HINT = {c1:'bubbe', c2:'bakery', c3:'deli', c4:'school', c5:'shul', c6:'kibbutz', c7:'yeshiva', c8:'matzah', c9:'olive', c10:'scribe',
   c11:'tank', c12:'hall', c13:'golem', c14:'manna', c15:'sea', c16:'bush', c17:'ladder', c18:'chariot', c19:'tikkun'};
 let storyFromOldSave = false, sceneQ = [], scene = null;
@@ -764,10 +846,11 @@ function storyCheck(quiet) {
   for (const ch of STORY) {
     if (S.story.got.includes(ch.id) || !ch.need()) continue;
     S.story.got.push(ch.id);
-    if (quiet) { S.story.seen.push(ch.id); continue; }
+    if (quiet) { S.story.seen.push(ch.id); if (ch.id === 'k1') breakCoin(); continue; }
     $('#storyDot').hidden = false;
     if (opts.story) queueScene(ch.id);
-    else toast(`Chapter ${ch.n}: ${ch.title}`, 'A new chapter is waiting in the Story tab.', {name:ch.art});
+    else toast(`${chapLabel(ch)}: ${ch.title}`, 'A new chapter is waiting in the Story tab.', {name:ch.art});
+    if (ch.id === 'k1') breakCoin();
     checkAch();
   }
   if (curTab === 'story') renderStory();
@@ -777,7 +860,7 @@ function playScene(id) {
   const ch = STORY_MAP[id]; if (!ch) return;
   scene = {ch, i:0, typing:null, shown:''};
   hideTip();
-  $('#scChap').textContent = ch.n === 0 ? 'Prologue' : `Chapter ${ch.n}`;
+  $('#scChap').textContent = chapLabel(ch);
   $('#scTitle').textContent = ch.title;
   $('#scene').hidden = false;
   sceneLine();
@@ -815,9 +898,10 @@ function renderStory() {
   $('#storyDot').hidden = true;
   for (const ch of STORY) {
     const got = S.story.got.includes(ch.id), d = document.createElement('div');
+    if (ch.alt && !got) continue;  // alternate chapters stay secret until reached
     d.className = 'chap' + (got ? '' : ' locked');
     const hint = STORY_HINT[ch.id] ? `Unlocks with your first ${BMAP[STORY_HINT[ch.id]].name}.` : ch.id === 'c20' ? 'Unlocks when you start a new generation.' : '';
-    d.innerHTML = `${sImg(ch.art, 64)}<span><span class="cn">${ch.n === 0 ? 'Prologue' : 'Chapter ' + ch.n}</span><b>${got ? esc(ch.title) : '???'}</b><small>${got ? esc(ch.lines[0][1].slice(0, 110)) + (ch.lines[0][1].length > 110 ? '...' : '') : hint}</small></span>`;
+    d.innerHTML = `${sImg(ch.art, 64)}<span><span class="cn">${chapLabel(ch)}</span><b>${got ? esc(ch.title) : '???'}</b><small>${got ? esc(ch.lines[0][1].slice(0, 110)) + (ch.lines[0][1].length > 110 ? '...' : '') : hint}</small></span>`;
     if (got) { const b = document.createElement('button'); b.className = 'btn ghost'; b.textContent = S.story.seen.includes(ch.id) ? 'Replay' : 'Play'; b.addEventListener('click', () => playScene(ch.id)); d.appendChild(b); }
     box.appendChild(d);
   }
@@ -911,6 +995,13 @@ function renderDebug() {
     ...STORY.map(ch => [ch.n === 0 ? 'Prologue' : `Ch. ${ch.n}`, () => { if (!S.story.got.includes(ch.id)) S.story.got.push(ch.id); playScene(ch.id); }]),
     ['Reset story progress', () => { S.story = {got:[], seen:[]}; renderStory(); toast('Testing menu', 'Story reset. Chapters replay as you reach them again.', {name:'bolt'}); }],
   ]);
+  group('Autoclicker', [
+    ['Add a strike (fake praise)', () => { S.auto.last = 0; autoCheck({isTrusted:false}, 0, 0); }],
+    ['Flag as autoclicker', () => { S.auto.strikes = Math.max(3, S.auto.strikes); S.auto.flagged = true; dbgAfter('Flagged. Klik wakes up when you own a Fiery Chariot.'); }],
+    ['Wake Klik now', () => { S.auto.flagged = true; if (!owned('chariot')) S.b.chariot = 1; S.story.got = S.story.got.filter(id => id !== 'k1'); storyCheck(); dbgAfter(); }],
+    ['Repair to 600/613', () => { if (coinBroken()) { S.auto.repair = 600; toast('Testing menu', '13 more hand clicks to mend the coin.', {name:'bolt'}); } }],
+    ['Reset detector and coin', () => { S.auto = fresh().auto; S.story.got = S.story.got.filter(id => id !== 'k1' && id !== 'k2'); setCoinArt(); dbgAfter('Detector reset, coin whole again.'); }],
+  ]);
   group('Generations', [
     ['Ready to pass on (+10 heritage)', () => { S.allTime = Math.max(S.allTime, Math.pow(heritageFor(S.allTime) + 10, 3) * 1e12); dbgAfter('Enough all-time shekels for 10 more heritage. Use the Generations tab.'); }],
     ['+100 heirloom points', () => { S.chips += 100; renderHeirlooms(true); dbgAfter('+100 heirloom points.'); }],
@@ -933,7 +1024,7 @@ function load(code) {
   const data = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
   const base = fresh(), d = data.S || {};
   S = Object.assign(base, d);
-  for (const k of ['pom','garden','trivia','dreidel','story','market']) S[k] = Object.assign(fresh()[k], d[k] || {});
+  for (const k of ['pom','garden','trivia','dreidel','story','market','auto']) S[k] = Object.assign(fresh()[k], d[k] || {});
   storyFromOldSave = !d.story;
   S.up = (S.up || []).map(id => /^[a-z]+_\d$/.test(id) ? id.replace(/_(\d)$/, '_t$1') : id);
   upSet = new Set(S.up.filter(id => UPG[id])); achSet = new Set((S.ach || []).filter(id => ACHMAP[id])); hupSet = new Set(S.hup || []);
@@ -953,7 +1044,7 @@ function afterLoad() {
   $('#optSound').checked = opts.sound; $('#optRain').checked = opts.rain; $('#optSci').checked = opts.sci; $('#optStory').checked = opts.story !== false; $('#optLow').checked = !!opts.lowpower; applyLowPower();
   Sound.sfx.on = opts.sound;
   $('#jMode').value = Music.mode; $('#jInst').value = Music.inst; $('#jBand').checked = Music.band; syncTempoUI();
-  recalc(); renderName(); setHoney(); renderSeasons(); refreshUpgrades(true); updateStore(); renderHood(true); genUI(); if (curTab === 'gen') renderHeirlooms(true); if (curTab === 'ach') renderAch(); renderBuffs(); renderPom();
+  setCoinArt(); recalc(); renderName(); setHoney(); renderSeasons(); refreshUpgrades(true); updateStore(); renderHood(true); genUI(); if (curTab === 'gen') renderHeirlooms(true); if (curTab === 'ach') renderAch(); renderBuffs(); renderPom();
 }
 
 /* ================= TABS & CONTROLS ================= */
@@ -1032,7 +1123,7 @@ function onKey(e) {
   if (!$('#modal').hidden) return;
   const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
   if (typing) return;
-  if (e.key === ' ' && (t === document.body || t === coin)) { e.preventDefault(); if (!e.repeat) coin.click(); return; }
+  if (e.key === ' ' && (t === document.body || t === coin)) { e.preventDefault(); if (!e.repeat) { kbdClick = true; coin.click(); } return; }
   if (t !== document.body && t.tagName === 'BUTTON') return;
   const q = {'1':1, '2':10, '3':100}[e.key];
   if (q) $(`.seg button[data-qty="${q}"]`).click();
@@ -1091,7 +1182,7 @@ function tick() {
   if (t >= nextGelt) { spawnGelt(); nextGelt = t + geltDelay(); }
   if (S.season !== 'none' && hasLuach() && t >= nextCrit) { spawnCritter(); nextCrit = t + critDelay(); }
   if (document.hidden) { slow += dt; if (slow >= 5) { slow = 0; recalc(); checkAch(); pomTick(); marketTick(); } return; }
-  const bankTxt = fmt(S.bank), cpsTxt = fmt(curCps, true) + ' per second' + (S.buffs.length ? ' (boosted)' : '');
+  const bankTxt = fmt(S.bank), cpsTxt = coinBroken() ? `Coin cracked: glue it by hand, ${S.auto.repair}/613` : fmt(curCps, true) + ' per second' + (S.buffs.length ? ' (boosted)' : '');
   if (bankTxt !== lastBankTxt) { lastBankTxt = bankTxt; $('#bank').textContent = bankTxt; $('#mBank').textContent = bankTxt; }
   if (cpsTxt !== lastCpsTxt) { lastCpsTxt = cpsTxt; $('#cpsLine').textContent = cpsTxt; $('#mCps').textContent = cpsTxt; }
   updateStore(); refreshUpgrades(); jukeUI();
@@ -1134,7 +1225,7 @@ function applyArt() {
   root.setProperty('--tx-parch', `url(${T.parchment})`); root.setProperty('--tx-wood', `url(${T.wood})`);
   root.setProperty('--tx-dark', `url(${T.darkwood})`); root.setProperty('--tx-stone', `url(${T.stone})`);
   root.setProperty('--tx-wave', `url(${M.wave})`); root.setProperty('--tx-honey', `url(${M.honey})`); root.setProperty('--tx-soil', `url(${M.soil})`);
-  coin.style.backgroundImage = `url(${PXA.bigCoin().toDataURL()})`;
+  setCoinArt();
   $('.pomart').innerHTML = sImg('pom');
   $('#mbar .mb-coin').innerHTML = sImg('coin', 32);
   $$('[data-ic]').forEach(el => { const t = el.classList.contains('ni') ? el : el.querySelector('.ti'); if (t) t.innerHTML = sImg(el.dataset.ic, el.classList.contains('ni') ? 32 : 24); });

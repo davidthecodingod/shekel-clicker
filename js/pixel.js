@@ -201,7 +201,21 @@ const PXA = (() => {
     return c;
   }
 
-  return {bigCoin, frameUrl, textures, skyline, rowBg, seeded};
+  /* The coin after Klik: cracked down the middle (glued = mended with challah dough). */
+  function crackedCoin(glued) {
+    const c = bigCoin(), x = c.getContext('2d');
+    const path = [[25,3],[24,6],[26,9],[23,13],[25,17],[22,21],[24,25],[21,29],[23,33],[20,37],[22,41],[21,45]];
+    for (let k = 0; k < path.length - 1; k++) {
+      const [x0, y0] = path[k], [x1, y1] = path[k + 1], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let t = 0; t <= n; t++) {
+        const px = Math.round(x0 + (x1 - x0) * t / n), py = Math.round(y0 + (y1 - y0) * t / n);
+        x.fillStyle = glued ? PAL.N : PAL.k; x.fillRect(px, py, 1, 1);
+        x.fillStyle = glued ? PAL.n : PAL.O; x.fillRect(px + 1, py, 1, 1);
+      }
+    }
+    return c;
+  }
+  return {bigCoin, crackedCoin, frameUrl, textures, skyline, rowBg, seeded};
 })();
 
 /* Extra tiles used by the stylesheet */
