@@ -323,8 +323,10 @@ select{background:var(--parch);color:var(--ink);border:3px solid var(--ink);padd
 @keyframes bob{50%{transform:translateY(-10px) rotate(8deg)}}
 @keyframes drift{from{transform:translateX(0)}to{transform:translateX(var(--dx))}}
 
-#modal,#scene{position:fixed;inset:0;background:rgba(10,6,16,.66);z-index:70;display:grid;place-items:center;padding:var(--sp4)}
-#modal[hidden],#scene[hidden]{display:none}
+#modal,#scene,#patch{position:fixed;inset:0;background:rgba(10,6,16,.66);z-index:70;display:grid;place-items:center;padding:var(--sp4)}
+#modal[hidden],#scene[hidden],#patch[hidden]{display:none}
+.mbox ul{margin:0 0 var(--sp3);padding-left:1.2em}
+.mbox li{margin:0 0 var(--sp2)}
 .mbox{width:min(400px,100%);background:var(--tx-parch);background-size:48px 48px;color:var(--ink);border:6px solid var(--parch2);border-image:var(--fr-parch) 4 / 12px stretch;padding:var(--sp4) var(--sp6);box-shadow:var(--shadow)}
 .mbox h3{font-family:var(--f-pix);margin:0 0 var(--sp2);font-size:22px}
 .mbox p{margin:0 0 var(--sp3)}

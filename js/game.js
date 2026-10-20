@@ -921,6 +921,29 @@ function modal({title, text, input, okText}) {
     inp.onkeydown = e => { if (e.key === 'Enter') done(inp.value); if (e.key === 'Escape') done(null); };
   });
 }
+/* ================= PATCH NOTES =================
+   Shown once to returning players. Bump PATCH.id for the next patch. */
+const PATCH = {id:'2026-10-20', notes:[
+  'Torah Study is fixed. A lot of questions were marking the wrong answer as correct, and some had lost the right answer entirely. Every question has its four choices back, and the right one counts.',
+  'Your save, streak, and stats are untouched.',
+]};
+const PATCH_KEY = 'shekelClicker_patch';
+function patchNotes() {
+  try { if (localStorage.getItem(PATCH_KEY) === PATCH.id) return; } catch (e) { return; }
+  if (!$('#scene').hidden || !$('#modal').hidden) { setTimeout(patchNotes, 1000); return; }
+  const m = $('#patch'), list = $('#pnList');
+  list.innerHTML = '';
+  for (const n of PATCH.notes) { const li = document.createElement('li'); li.textContent = n; list.appendChild(li); }
+  m.hidden = false; $('#pnOk').focus();
+  const done = () => {
+    m.hidden = true; document.removeEventListener('keydown', esc, true);
+    try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {}
+  };
+  const esc = e => { if (e.key === 'Escape') { e.stopPropagation(); done(); } };
+  $('#pnOk').onclick = done;
+  m.onclick = e => { if (e.target === m) done(); };
+  document.addEventListener('keydown', esc, true);
+}
 const confirmBox = (title, text, okText) => modal({title, text, okText}).then(v => !!v);
 function renderName() {
   $('#commName .pl-name').textContent = S.name || 'Your Congregation';
@@ -1256,6 +1279,8 @@ function boot() {
   pomTick(); checkAch(); marketTick(true);
   nextNews();
   setTimeout(() => storyCheck(), loaded ? 1500 : 250);
+  if (loaded) setTimeout(patchNotes, 2500);
+  else try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {}
   setInterval(tick, 100);
   setInterval(nextNews, 11000);
   setInterval(drawHood, 280);
