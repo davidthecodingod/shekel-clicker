@@ -50,7 +50,7 @@ async function skipScenes(p) { for (let i = 0; i < 12 && await p.isVisible('#sce
   await p.reload(); await p.waitForTimeout(1500); await skipScenes(p);
   await p.waitForSelector('#patch:not([hidden])', { timeout: 8000 }).catch(() => {});
   ok(await p.isVisible('#patch'), 'returning player sees patch notes');
-  ok((await p.textContent('#pnList')).includes('Torah Study is fixed'), 'notes mention the Torah fix');
+  ok((await p.textContent('#pnList')).includes('Torah Study was broken'), 'notes mention the Torah fix');
   await p.screenshot({ path: OUT + 'patch_desktop.png' });
   await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(300);
   await p.screenshot({ path: OUT + 'patch_mobile.png' });
@@ -68,6 +68,19 @@ async function skipScenes(p) { for (let i = 0; i < 12 && await p.isVisible('#sce
   await p.waitForSelector('#patch:not([hidden])', { timeout: 8000 }).catch(() => {});
   await p.keyboard.press('Escape');
   ok(!(await p.isVisible('#patch')), 'Escape closes the popup');
+
+  // A story scene starting under the open popup: Enter on "Got it" still closes the popup.
+  await p.evaluate(() => localStorage.removeItem('shekelClicker_patch'));
+  await p.reload(); await p.waitForTimeout(1500); await skipScenes(p);
+  await p.waitForSelector('#patch:not([hidden])', { timeout: 8000 }).catch(() => {});
+  await p.evaluate(() => playScene('c0'));
+  await p.focus('#pnOk'); await p.keyboard.press('Enter');
+  ok(!(await p.isVisible('#patch')), 'Enter closes the popup with a scene behind it');
+  ok(await p.isVisible('#scene'), 'scene behind was not skipped');
+
+  // Script and CSS URLs carry a version so returning players get the fixed data.js with the new game.js.
+  const tags = await p.evaluate(() => [...document.querySelectorAll('script[src],link[rel=stylesheet]')].map(e => e.getAttribute('src') || e.getAttribute('href')));
+  ok(tags.length === 8 && tags.every(u => /\?v=/.test(u)), 'assets versioned: ' + tags.join(' '));
 
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

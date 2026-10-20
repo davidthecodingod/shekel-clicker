@@ -924,8 +924,8 @@ function modal({title, text, input, okText}) {
 /* ================= PATCH NOTES =================
    Shown once to returning players. Bump PATCH.id for the next patch. */
 const PATCH = {id:'2026-10-20', notes:[
-  'Torah Study is fixed. A lot of questions were marking the wrong answer as correct, and some had lost the right answer entirely. Every question has its four choices back, and the right one counts.',
-  'Your save, streak, and stats are untouched.',
+  'Torah Study was broken. Most questions marked the wrong answer as correct, and a lot of them didn\'t show the right answer at all. Every question has its four choices back and scores properly now.',
+  'This patch didn\'t touch your save, streak, or stats.',
 ]};
 const PATCH_KEY = 'shekelClicker_patch';
 function patchNotes() {
@@ -1142,8 +1142,9 @@ function setView(v) {
 }
 function onKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!$('#patch').hidden) return;
   if (!$('#scene').hidden) { if (e.key === 'Escape') sceneEnd(); else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sceneNext(); } return; }
-  if (!$('#modal').hidden || !$('#patch').hidden) return;
+  if (!$('#modal').hidden) return;
   const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
   if (typing) return;
   if (e.key === ' ' && (t === document.body || t === coin)) { e.preventDefault(); if (!e.repeat) { kbdClick = true; coin.click(); } return; }

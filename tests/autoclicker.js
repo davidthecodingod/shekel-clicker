@@ -22,8 +22,9 @@ await p.evaluate(() => { S.auto.last = 0; for (let i = 0; i < 5; i++) document.g
 await p.evaluate(() => { S.auto.last = 0; document.getElementById('coin').click(); });
 console.log('scripted -> strikes:', await p.evaluate(() => S.auto.strikes), 'flagged:', await p.evaluate(() => S.auto.flagged));
 // 4. buy the first kibbutz through the store (snapshot), keep building, then Klik wakes at the chariot
+await p.evaluate(() => { opts.story = false; sceneQ.length = 0; sceneEnd(); });  // keep story scenes from covering the store during the purchase
 await p.evaluate(() => { S.b = {bubbe:20, bakery:10, deli:8, school:5, klezmer:3, shul:2}; S.bank = 3e7; S.earned = 5e7; recalc(); updateStore(); });
-await p.click('#buildings li:nth-child(7) .bld'); await p.waitForTimeout(300); await p.click('#scSkip').catch(()=>{});
+await p.click('#buildings li:nth-child(7) .bld'); await p.waitForTimeout(300); await p.evaluate(() => { opts.story = true; }); await p.click('#scSkip').catch(()=>{});
 const before = await p.evaluate(() => ({snap: !!S.auto.snap, snapBank: S.auto.snap && S.auto.snap.bank, kib: owned('kibbutz')}));
 console.log('after kibbutz purchase:', JSON.stringify(before));
 await p.evaluate(() => { S.bank = 5e9; Object.assign(S.b, {kibbutz:12, yeshiva:6, golem:3}); storyCheck(true); sceneQ.length = 0; sceneEnd(); S.story.got.push('c18'); S.b.chariot = 1; recalc(); });
