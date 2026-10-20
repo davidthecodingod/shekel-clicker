@@ -1143,7 +1143,7 @@ function setView(v) {
 function onKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (!$('#scene').hidden) { if (e.key === 'Escape') sceneEnd(); else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sceneNext(); } return; }
-  if (!$('#modal').hidden) return;
+  if (!$('#modal').hidden || !$('#patch').hidden) return;
   const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
   if (typing) return;
   if (e.key === ' ' && (t === document.body || t === coin)) { e.preventDefault(); if (!e.repeat) { kbdClick = true; coin.click(); } return; }
